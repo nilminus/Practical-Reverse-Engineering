@@ -1,0 +1,8 @@
+fastcall convention
+ecx 1st parameter
+edx 2nd parameter
+
+eax = [ecx + 60]	; ecx probably a pointer to structure
+			; eax points to data found in offset 60 of the ecx structure
+
+esi = [edx + 8]		; esi points to data found in offset 8 of edx
