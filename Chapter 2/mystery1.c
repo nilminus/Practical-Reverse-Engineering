@@ -1,8 +1,15 @@
-BOOL str2int(char *str, int *result){
+#include <stdbool.h>
+#include <limits.h>
 
-    BOOL negatif;
+#define TRUE 1
+#define FALSE 0
+
+_Bool str2int(char *str, int *retnum){
+
+    _Bool negatif;
     int base = 10;
     long result = 0;
+    int index = 0;
 
     /* Eliminate signs (+) or (-) */
     if (*str == "-"){
@@ -22,10 +29,11 @@ BOOL str2int(char *str, int *result){
     }
 
     /* Ball-busting algorithm to convert ascii to integer */
-    while (str[index] >= '0' and str[index] <= '9'){
-        result = result * 10 + str[index];
+    while ( (str[index] >= '0') && (str[index] <= '9') ){
+        result = result * 10 + str[index] - '0';
         index++ ;
-        if (index == 12) return 0;
+        if (index == 12) 
+            return 0;
     }
 
 
@@ -35,3 +43,4 @@ BOOL str2int(char *str, int *result){
 
     *retnum = result;
     return TRUE;
+}
