@@ -1,0 +1,8 @@
+Execution state is Thumb
+No prologue/epilogue
+
+if (r0)
+    return *(r0-8);
+return 0;
+
+This function returns 32bit offset -0x8 of the first parameter pointer, if the pointer is valid
