@@ -1,0 +1,12 @@
+Execution state Thumb
+
+arg1 is probably a pointer to a structure because of offset 0x63
+
+BOOL check63bit(struct *arg1){
+
+    if (arg1){
+        if (arg1->field63 == 0)
+            return FALSE;
+    } 
+    return TRUE;
+}
