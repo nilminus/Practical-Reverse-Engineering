@@ -18,7 +18,7 @@ char* unk_function(int number){
             break;
         }
         default: {
-            return "E";
+            return "A";
             break;
         }
     }
