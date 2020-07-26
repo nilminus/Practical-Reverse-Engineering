@@ -5,7 +5,7 @@ VOID KeReadyThread (__inout PKTHREAD Thread)
 	if (Thread->ApcState.Process->StackCount != 7){
 		// increases priority level
 		TPR = TPR + 2;
-		if (KiIrqlFlags && KiIrqlFlags != 1 && TPR_original <= 0xf){
+		if (KiIrqlFlags && (KiIrqlFlags != 1) && (TPR_original <= 0xf)){
 				rax = CurrentPrcb;
 				r9 = 1 << (r8+1);
 				r11 = CurrentPrcb->83b8h;
