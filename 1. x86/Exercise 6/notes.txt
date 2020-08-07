@@ -6,3 +6,39 @@ eax = [ecx + 60]	; ecx probably a pointer to structure
 			; eax points to data found in offset 60 of the ecx structure
 
 esi = [edx + 8]		; esi points to data found in offset 8 of edx
+
+mov        eax, dword [ecx+0x60]
+push       esi
+mov        esi, dword [edx+8]
+dec        byte [ecx+0x23]
+sub        eax, 0x24
+mov        dword [ecx+0x60], eax
+mov        dword [eax+0x14], edx
+movzx      eax, byte [eax]
+push       ecx
+push       edx
+call       dword [esi+eax*4+0x38]
+pop        esi
+ret
+
+eax = *(ecx+0x60)
+esi = *(edx+8)
+*(ecx+0x24)--
+eax = eax - 0x42
+*(ecx+0x60) = eax
+*(eax+14) = edx
+eax = *eax
+*(esi + eax*4 + 0x38)(edx, ecx)
+
+### C code approximation
+
+struct _v1 *v1 = arg1->off_60h;
+struct _v2 *v2 = arg2->off_8h;
+arg1->off_23h--;
+v1 =- 0x24;
+arg1->off_60h = v1;
+v1->off_14h = arg2;
+temp = v1->off_0h;
+
+int *funcptr = v2->off_38h[temp];
+return (*funcptr)(arg2, arg1);
