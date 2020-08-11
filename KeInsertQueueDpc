@@ -1,0 +1,14 @@
+BOOLEAN KeInsertQueueDpc(
+  PRKDPC                 Dpc,
+  PVOID                  SystemArgument1,
+  __drv_aliasesMem PVOID SystemArgument2
+);
+
+Dpc
+Pointer to the KDPC structure for the DPC object. This structure must have been initialized by either KeInitializeDpc or KeInitializeThreadedDpc.
+
+SystemArgument1
+Specifies driver-determined context data. This value is passed as the SystemArgument1 parameter to the DPC object's CustomDpc or CustomThreadedDpc routine.
+
+SystemArgument2
+Specifies driver-determined context data. This value is passed as the SystemArgument2 parameter to the DPC object's CustomDpc or CustomThreadedDpc routine.
