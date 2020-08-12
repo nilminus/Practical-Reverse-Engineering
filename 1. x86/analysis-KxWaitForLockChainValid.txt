@@ -1,0 +1,27 @@
+#define HvlLongSpinCountMask 0FFFFFFFFh 
+
+PKSPIN_LOCK_QUEUE KxWaitForLockChainValid (__inout PKSPIN_LOCK_QUEUE LockQueue)
+{
+	rdi = LockQueue;	
+	ebx = 0;
+
+	do{
+		ebx++
+		if (ebx != HvlLongSpinCountMask){
+			asm("pause");
+		} else {
+
+		// looks sketchy, probably wrong
+			if (HvlEnlightenments == 0x40 || (!KiCheckVpBackingLongSpinWaitHypercall())
+				continue;
+			HvlNotifyLongSpinWait();
+		}
+	} while (LockQueue->Next)
+}
+
+
+#### Structures
+
+0: kd> dt nt!_KSPIN_LOCK_QUEUE
+   +0x000 Next             : Ptr64 _KSPIN_LOCK_QUEUE
+   +0x008 Lock             : Ptr64 Uint8B

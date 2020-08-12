@@ -1,0 +1,188 @@
+NTKERNELAPI VOID KeInitializeQueue (_Out_ PRKQUEUE Queue, _In_ ULONG Count )
+{
+	rbx = Queue;
+	Queue->Header.Type = 4;
+	Queue->Header.Abandoned = 0x1000;
+	rax = Queue->Header.WaitListHead
+	Queue->Header.WaitListHead->Blink = &Queue->Header.WaitListHead;
+	Queue->Header.WaitListHead->Flink = &Queue->Header.WaitListHead;
+	Queue->EntryListHead->Blink = EntryListHead
+	Queue->EntryListHead->Flink = EntryListHead
+
+	Queue->ThreadListHead->Blink = &ThreadListHead
+	Queue->ThreadListHead->Flink = &ThreadListHead
+
+	Queue->SignalState = 0;
+	Queue.CurrentCount = 0;
+	if (Count == 0)
+		Queue->MaximumCount = KeQueryActiveProcessorCountEx(0xffff);
+	else 
+		Queue->MaximumCount = Count;
+}
+
+
+#### Structures
+
+typedef struct _DISPATCHER_HEADER
+{
+     union
+     {
+          struct
+          {
+               UCHAR Type;
+               union
+               {
+                    UCHAR Abandoned;
+                    UCHAR Absolute;
+                    UCHAR NpxIrql;
+                    UCHAR Signalling;
+               };
+               union
+               {
+                    UCHAR Size;
+                    UCHAR Hand;
+               };
+               union
+               {
+                    UCHAR Inserted;
+                    UCHAR DebugActive;
+                    UCHAR DpcActive;
+               };
+          };
+          LONG Lock;
+     };
+     LONG SignalState;
+     LIST_ENTRY WaitListHead;
+} DISPATCHER_HEADER, *PDISPATCHER_HEADER;
+
+
+0: kd> dt nt!_kqueue
+   +0x000 Header           : _DISPATCHER_HEADER
+   +0x018 EntryListHead    : _LIST_ENTRY
+   +0x028 CurrentCount     : Uint4B
+   +0x02c MaximumCount     : Uint4B
+   +0x030 ThreadListHead   : _LIST_ENTRY
+
+typedef struct _KQUEUE {
+    DISPATCHER_HEADER Header;
+    LIST_ENTRY EntryListHead;
+    ULONG CurrentCount;
+    ULONG MaximumCount;
+    LIST_ENTRY ThreadListHead;
+} KQUEUE, *PKQUEUE, *RESTRICTED_POINTER PRKQUEUE;
+
+0: kd> dt nt!_kqueue -r
+   +0x000 Header           : _DISPATCHER_HEADER
+      +0x000 Lock             : Int4B
+      +0x000 LockNV           : Int4B
+      +0x000 Type             : UChar
+      +0x001 Signalling       : UChar
+      +0x002 Size             : UChar
+      +0x003 Reserved1        : UChar
+      +0x000 TimerType        : UChar
+      +0x001 TimerControlFlags : UChar
+      +0x001 Absolute         : Pos 0, 1 Bit
+      +0x001 Wake             : Pos 1, 1 Bit
+      +0x001 EncodedTolerableDelay : Pos 2, 6 Bits
+      +0x002 Hand             : UChar
+      +0x003 TimerMiscFlags   : UChar
+      +0x003 Index            : Pos 0, 6 Bits
+      +0x003 Inserted         : Pos 6, 1 Bit
+      +0x003 Expired          : Pos 7, 1 Bit
+      +0x000 Timer2Type       : UChar
+      +0x001 Timer2Flags      : UChar
+      +0x001 Timer2Inserted   : Pos 0, 1 Bit
+      +0x001 Timer2Expiring   : Pos 1, 1 Bit
+      +0x001 Timer2CancelPending : Pos 2, 1 Bit
+      +0x001 Timer2SetPending : Pos 3, 1 Bit
+      +0x001 Timer2Running    : Pos 4, 1 Bit
+      +0x001 Timer2Disabled   : Pos 5, 1 Bit
+      +0x001 Timer2ReservedFlags : Pos 6, 2 Bits
+      +0x002 Timer2ComponentId : UChar
+      +0x003 Timer2RelativeId : UChar
+      +0x000 QueueType        : UChar
+      +0x001 QueueControlFlags : UChar
+      +0x001 Abandoned        : Pos 0, 1 Bit
+      +0x001 DisableIncrement : Pos 1, 1 Bit
+      +0x001 QueueReservedControlFlags : Pos 2, 6 Bits
+      +0x002 QueueSize        : UChar
+      +0x003 QueueReserved    : UChar
+      +0x000 ThreadType       : UChar
+      +0x001 ThreadReserved   : UChar
+      +0x002 ThreadControlFlags : UChar
+      +0x002 CycleProfiling   : Pos 0, 1 Bit
+      +0x002 CounterProfiling : Pos 1, 1 Bit
+      +0x002 GroupScheduling  : Pos 2, 1 Bit
+      +0x002 AffinitySet      : Pos 3, 1 Bit
+      +0x002 Tagged           : Pos 4, 1 Bit
+      +0x002 EnergyProfiling  : Pos 5, 1 Bit
+      +0x002 SchedulerAssist  : Pos 6, 1 Bit
+      +0x002 ThreadReservedControlFlags : Pos 7, 1 Bit
+      +0x003 DebugActive      : UChar
+      +0x003 ActiveDR7        : Pos 0, 1 Bit
+      +0x003 Instrumented     : Pos 1, 1 Bit
+      +0x003 Minimal          : Pos 2, 1 Bit
+      +0x003 Reserved4        : Pos 3, 2 Bits
+      +0x003 AltSyscall       : Pos 5, 1 Bit
+      +0x003 UmsScheduled     : Pos 6, 1 Bit
+      +0x003 UmsPrimary       : Pos 7, 1 Bit
+      +0x000 MutantType       : UChar
+      +0x001 MutantSize       : UChar
+      +0x002 DpcActive        : UChar
+      +0x003 MutantReserved   : UChar
+      +0x004 SignalState      : Int4B
+      +0x008 WaitListHead     : _LIST_ENTRY
+         +0x000 Flink            : Ptr64 _LIST_ENTRY
+         +0x008 Blink            : Ptr64 _LIST_ENTRY
+   +0x018 EntryListHead    : _LIST_ENTRY
+      +0x000 Flink            : Ptr64 _LIST_ENTRY
+         +0x000 Flink            : Ptr64 _LIST_ENTRY
+         +0x008 Blink            : Ptr64 _LIST_ENTRY
+      +0x008 Blink            : Ptr64 _LIST_ENTRY
+         +0x000 Flink            : Ptr64 _LIST_ENTRY
+         +0x008 Blink            : Ptr64 _LIST_ENTRY
+   +0x028 CurrentCount     : Uint4B
+   +0x02c MaximumCount     : Uint4B
+   +0x030 ThreadListHead   : _LIST_ENTRY
+      +0x000 Flink            : Ptr64 _LIST_ENTRY
+         +0x000 Flink            : Ptr64 _LIST_ENTRY
+         +0x008 Blink            : Ptr64 _LIST_ENTRY
+      +0x008 Blink            : Ptr64 _LIST_ENTRY
+         +0x000 Flink            : Ptr64 _LIST_ENTRY
+         +0x008 Blink            : Ptr64 _LIST_ENTRY
+
+
+#### WinDbg
+
+0: kd> uf KeInitializeQueue
+nt!KeInitializeQueue:
+fffff801`17016530 4053            push    rbx
+fffff801`17016532 4883ec20        sub     rsp,20h
+fffff801`17016536 488bd9          mov     rbx,rcx
+fffff801`17016539 c60104          mov     byte ptr [rcx],4
+fffff801`1701653c 33c9            xor     ecx,ecx
+fffff801`1701653e 66c743010010    mov     word ptr [rbx+1],1000h
+fffff801`17016544 488d4308        lea     rax,[rbx+8]
+fffff801`17016548 48894008        mov     qword ptr [rax+8],rax
+fffff801`1701654c 488900          mov     qword ptr [rax],rax
+fffff801`1701654f 488d4318        lea     rax,[rbx+18h]
+fffff801`17016553 48894008        mov     qword ptr [rax+8],rax
+fffff801`17016557 488900          mov     qword ptr [rax],rax
+fffff801`1701655a 488d4330        lea     rax,[rbx+30h]
+fffff801`1701655e 48894008        mov     qword ptr [rax+8],rax
+fffff801`17016562 488900          mov     qword ptr [rax],rax
+fffff801`17016565 894b04          mov     dword ptr [rbx+4],ecx
+fffff801`17016568 894b28          mov     dword ptr [rbx+28h],ecx
+fffff801`1701656b 85d2            test    edx,edx
+fffff801`1701656d 750c            jne     nt!KeInitializeQueue+0x4b (fffff801`1701657b)  Branch
+
+nt!KeInitializeQueue+0x3f:
+fffff801`1701656f b9ffff0000      mov     ecx,0FFFFh
+fffff801`17016574 e817000000      call    nt!KeQueryActiveProcessorCountEx (fffff801`17016590)
+fffff801`17016579 8bd0            mov     edx,eax
+
+nt!KeInitializeQueue+0x4b:
+fffff801`1701657b 89532c          mov     dword ptr [rbx+2Ch],edx
+fffff801`1701657e 4883c420        add     rsp,20h
+fffff801`17016582 5b              pop     rbx
+fffff801`17016583 c3              ret

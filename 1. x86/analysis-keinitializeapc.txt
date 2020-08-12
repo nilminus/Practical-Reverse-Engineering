@@ -1,0 +1,112 @@
+#### Decompilation
+
+NTKERNELAPI VOID KeInitializeApc(PKAPC Apc, PKTHREAD Thread, KAPC_ENVIRONMENT Environment, PKKERNEL_ROUTINE KernelRoutine, PKRUNDOWN_ROUTINE RundownRoutine, PKNORMAL_ROUTINE NormalRoutine, KPROCESSOR_MODE ProcessorMode, PVOID NormalContext)
+{
+	Apc->Type = 0x12		// ApcObject
+	Apc->Size = 0x58		// Size = 88
+	if (Environment == CurrentApcEnvironment){
+		Environment = Thread->ApcStateIndex		// mov     r8b, [rdx+24Ah] rdx -> PKTHREAD
+	}
+	Apc->ApcStateIndex = Environment;    // rcx + 50h
+	Apc->RundownRoutine = *(RundownRoutine);
+	Apc->Thread = Thread;
+	Apc->NormalRoutine = NormalRoutine;
+	Apc->ApcMode = ProcessorMode;
+	Apc->NormalContext = NormalContext;
+	Apc->Inserted = 0;
+	return ;
+}
+
+#### Structures
+
+NTKERNELAPI VOID KeInitializeApc(
+    PKAPC Apc,
+    PKTHREAD Thread,
+    KAPC_ENVIRONMENT Environment,
+    PKKERNEL_ROUTINE KernelRoutine,
+    PKRUNDOWN_ROUTINE RundownRoutine,
+    PKNORMAL_ROUTINE NormalRoutine,
+    KPROCESSOR_MODE ProcessorMode,
+    PVOID NormalContext
+    );
+
+
+typedef struct _KAPC {                  
+    UCHAR Type;                         
+    UCHAR SpareByte0;                   
+    UCHAR Size;                         
+    UCHAR SpareByte1;                   
+    ULONG SpareLong0;                   
+    struct _KTHREAD *Thread;            
+    LIST_ENTRY ApcListEntry;            
+    PVOID Reserved[3];                  
+    PVOID NormalContext;                
+    PVOID SystemArgument1;              
+    PVOID SystemArgument2;              
+    CCHAR ApcStateIndex;                
+    KPROCESSOR_MODE ApcMode;            
+    BOOLEAN Inserted;                   
+} KAPC, *PKAPC, *PRKAPC;      
+
+
+0: kd> dt nt!_kapc
+   +0x000 Type             : UChar
+   +0x001 SpareByte0       : UChar
+   +0x002 Size             : UChar
+   +0x003 SpareByte1       : UChar
+   +0x004 SpareLong0       : Uint4B
+   +0x008 Thread           : Ptr64 _KTHREAD
+   +0x010 ApcListEntry     : _LIST_ENTRY
+   +0x020 KernelRoutine    : Ptr64     void 
+   +0x028 RundownRoutine   : Ptr64     void 
+   +0x030 NormalRoutine    : Ptr64     void 
+   +0x020 Reserved         : [3] Ptr64 Void
+   +0x038 NormalContext    : Ptr64 Void
+   +0x040 SystemArgument1  : Ptr64 Void
+   +0x048 SystemArgument2  : Ptr64 Void
+   +0x050 ApcStateIndex    : Char
+   +0x051 ApcMode          : Char
+   +0x052 Inserted         : UChar
+
+typedef enum _KAPC_ENVIRONMENT
+{
+	OriginalApcEnvironment,
+	AttachedApcEnvironment,
+	CurrentApcEnvironment,
+	InsertApcEnvironment
+}KAPC_ENVIRONMENT, * PKAPC_ENVIRONMENT;
+
+
+#### Disassembly
+
+0: kd> uf keinitializeapc
+nt!KeInitializeApc:
+fffff801`1701a980 c60112          mov     byte ptr [rcx],12h
+fffff801`1701a983 4c8bd1          mov     r10,rcx
+fffff801`1701a986 c6410258        mov     byte ptr [rcx+2],58h
+fffff801`1701a98a 4183f802        cmp     r8d,2
+fffff801`1701a98e 7444            je      nt!KeInitializeApc+0x54 (fffff801`1701a9d4)  Branch
+
+nt!KeInitializeApc+0x10:
+fffff801`1701a990 488b442428      mov     rax,qword ptr [rsp+28h]
+fffff801`1701a995 44884150        mov     byte ptr [rcx+50h],r8b
+fffff801`1701a999 48894128        mov     qword ptr [rcx+28h],rax
+fffff801`1701a99d 48895108        mov     qword ptr [rcx+8],rdx
+fffff801`1701a9a1 488b542430      mov     rdx,qword ptr [rsp+30h]
+fffff801`1701a9a6 48895130        mov     qword ptr [rcx+30h],rdx
+fffff801`1701a9aa 488bc2          mov     rax,rdx
+fffff801`1701a9ad 48f7d8          neg     rax
+fffff801`1701a9b0 4c894920        mov     qword ptr [rcx+20h],r9
+fffff801`1701a9b4 481bc9          sbb     rcx,rcx
+fffff801`1701a9b7 48234c2440      and     rcx,qword ptr [rsp+40h]
+fffff801`1701a9bc 48f7da          neg     rdx
+fffff801`1701a9bf 1ac0            sbb     al,al
+fffff801`1701a9c1 22442438        and     al,byte ptr [rsp+38h]
+fffff801`1701a9c5 41884251        mov     byte ptr [r10+51h],al
+fffff801`1701a9c9 49894a38        mov     qword ptr [r10+38h],rcx
+fffff801`1701a9cd 41c6425200      mov     byte ptr [r10+52h],0
+fffff801`1701a9d2 c3              ret
+
+nt!KeInitializeApc+0x54:
+fffff801`1701a9d4 448a824a020000  mov     r8b,byte ptr [rdx+24Ah]
+fffff801`1701a9db ebb3            jmp     nt!KeInitializeApc+0x10 (fffff801`1701a990)  Branch
