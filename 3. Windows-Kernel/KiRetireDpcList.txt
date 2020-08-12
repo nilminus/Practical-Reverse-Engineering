@@ -1,0 +1,16 @@
+BOOLEAN KiRetireDpcList(_KPRCB kprcb);
+
+# Before the call
+mov     rsp, [rbx+2E50h]
++0x2e50 DpcStack         : 0xfffff806`2e665fb0 Void
+RSP points to processsor's DpcStack
+Old RSP is saved into RAX and restored after jmp to KiRetireDpcList
+
+
+# Inside call
+1. Calculates processor's frequency? PpmPerfGetCurrentFrequency
+
+2. KiExecuteAllDpcs(KPRCB, CurrentThread, &r15d, 0)
+	-> EtwpLogKernelEvent()
+	-> Acquire locks
+	-> EtwTraceKernelEvent()
