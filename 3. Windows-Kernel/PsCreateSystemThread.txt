@@ -1,0 +1,128 @@
+1) Long story short, without threadhandle, the thread is created in the System process (ID = 4).
+
+2) Let's see with non-null process-handle:
+The thread is created in the process that commenced the IOCTL handler
+
+
+####
+
+#include <ntifs.h>
+#include <ntddk.h>
+#include "PsCreatorCommon.h"
+
+void PsCreatorUnload(PDRIVER_OBJECT DriverObject);
+NTSTATUS PsCreatorCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS PsCreatorDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+void StartRoutine(PVOID StartContext);
+
+extern "C" NTSTATUS DriverEntry(
+	PDRIVER_OBJECT DriverObject,
+	PUNICODE_STRING RegistryPath
+)
+{
+	UNREFERENCED_PARAMETER(RegistryPath);
+	auto status = STATUS_SUCCESS;
+	PDEVICE_OBJECT DeviceObject = nullptr;
+
+	DriverO.ect->DriverUnload = PsCreatorUnload;
+	DriverObject->MajorFunction[IRP_MJ_CREATE] =
+		DriverObject->MajorFunction[IRP_MJ_CLOSE] = PsCreatorCreateClose;
+	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = PsCreatorDeviceControl;
+
+	UNICODE_STRING deviceName = RTL_CONSTANT_STRING(L"\\Device\\" PROCESS_NAME);
+	status = IoCreateDevice(DriverObject, 0, &deviceName, FILE_DEVICE_UNKNOWN, 0, false, &DeviceObject);
+	if (!NT_SUCCESS(status)) {
+		KdPrint(("Failed to create device (0x%08X)\n", status));
+		return status;
+	}
+
+	UNICODE_STRING symName = RTL_CONSTANT_STRING(L"\\??\\" PROCESS_NAME);
+	status = IoCreateSymbolicLink(&symName, &deviceName);
+	if (!NT_SUCCESS(status)) {
+		KdPrint(("Failed to create symbolic link (0x%08X)\n", status));
+		return status;
+	}
+
+	KdPrint(("PsCreator DriverEntry completed successfully"));
+
+	return STATUS_SUCCESS;
+}
+
+void PsCreatorUnload(_In_ PDRIVER_OBJECT DriverObject) {
+	UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\" PROCESS_NAME);
+	// delete symbolic link
+	IoDeleteSymbolicLink(&symLink);
+
+	// delete device object
+	IoDeleteDevice(DriverObject->DeviceObject);
+
+	KdPrint(("PsCreator unloaded\n"));
+}
+
+NTSTATUS PsCreatorCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
+	UNREFERENCED_PARAMETER(DeviceObject);
+
+	Irp->IoStatus.Status = STATUS_SUCCESS;
+	Irp->IoStatus.Information = 0;
+	IoCompleteRequest(Irp, IO_NO_INCREMENT);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS PsCreatorDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
+	UNREFERENCED_PARAMETER(DeviceObject);
+	auto stack = IoGetNextIrpStackLocation(Irp);
+	auto status = STATUS_SUCCESS;
+
+	ULONG processId = 0;
+	processId = IoGetRequestorProcessId(Irp);
+	DbgPrint("Requestor ProcessId = %d\n", processId);
+	HANDLE requestorHandle = ULongToHandle(processId);
+
+	//HANDLE ThreadHandle = 0;
+	KdPrint(("Starting thread with PsCreateSystemThread...\n"));
+			status = PsCreateSystemThread(
+				&requestorHandle, 0, nullptr, 0, 0, StartRoutine, 0
+			);
+
+			if (!NT_SUCCESS(status)) {
+				KdPrint(("PsCreateSystemThread failed (0x%08X)\n"));
+				return status;
+			}
+
+
+	switch (stack->Parameters.DeviceIoControl.IoControlCode) {
+		case (IOCTL_PRIORITY_BOOSTER_SET_PRIORITY):
+		{
+			;
+		}
+		default:
+		{
+			status = STATUS_INVALID_DEVICE_REQUEST;
+			break;
+		}
+	}
+	Irp->IoStatus.Status = status;
+	Irp->IoStatus.Information = 0;
+	IoCompleteRequest(Irp, IO_NO_INCREMENT);
+	return status;
+}
+
+VOID StartRoutine(IN PVOID StartContext)
+{
+	UNREFERENCED_PARAMETER(StartContext);
+	HANDLE tid = 0, pid = 0;
+
+	LARGE_INTEGER li;
+	li.QuadPart = 10000000;
+	while (1) {
+		KeDelayExecutionThread(KernelMode, 0, &li);
+		DbgPrint("Thread 0.1 is running on your system now!");
+		PETHREAD thread = PsGetCurrentThread();
+		if (thread) {
+			tid = PsGetThreadId(thread);
+			pid = PsGetThreadProcessId(thread);
+		}
+		DbgPrint("tid = %d\npid = %d\n", HandleToULong(tid), HandleToUlong(pid));
+
+	}
+}
