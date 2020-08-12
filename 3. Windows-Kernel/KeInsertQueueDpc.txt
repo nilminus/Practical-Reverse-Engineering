@@ -12,3 +12,7 @@ Specifies driver-determined context data. This value is passed as the SystemArgu
 
 SystemArgument2
 Specifies driver-determined context data. This value is passed as the SystemArgument2 parameter to the DPC object's CustomDpc or CustomThreadedDpc routine.
+
+### Analysis
+Checked if it's ThreadedDPC (0x1A)
+Depending on Importance, the DPC will be inserted either on head or the tail of DPCList.
