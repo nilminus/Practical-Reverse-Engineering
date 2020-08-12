@@ -1,0 +1,7 @@
+KiExecuteDpc(KPRCB){
+	KeSetPriorityThread(currThread, 15);
+	KiSetSystemAffinityThreadToProcessor(ProcessorNumber, 0);
+	KeWaitForGate(KPRCB->DpcGate, 5);
+	KiExecuteAllDpcs(KPRCB, CurrentThread, &r15d, 1);
+	KiTryToEndDpcProcessing(ThreadDpcState, ActiveDpC);
+}
