@@ -1,0 +1,13 @@
+; this is memset
+
+mov edi, [ebp+8]   
+mov edx, edi       
+xor eax, eax       
+or ecx, 0FFFFFFFFh 
+repne scasb        
+add ecx, 2         
+neg ecx            
+mov al, [ebp+0Ch]  
+mov edi, edx       
+rep stosb          
+mov eax, edx       
