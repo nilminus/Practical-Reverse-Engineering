@@ -1,0 +1,18 @@
+### 1.
+call X
+mov ebx, [esp]
+
+### 2.
+call 0xaabbccdd
+
+jmp 0xaabbccdd
+
+push 0xaabbccdd
+ret
+
+### 3. 
+In this particular case, nothing. ESP always points to the return address.
+
+
+### 4.
+A pointer to the value is passed to the function instead.
