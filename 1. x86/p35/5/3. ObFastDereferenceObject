@@ -24,12 +24,12 @@ VOID FASTCALL ObFastDereferenceObject( PEX_FAST_REF FastRef, PVOID Object ){
       HalPutDmaAdapter ( Object );
       return ;
    } else {
-      r8 = FastRef->RefCnt++;
+      while (FastRef->RefCnt ^ Object->RefCnt < 0xF){
+         FastRef->RefCnt++;
+      }
+      HalPutDmaAdapter ( Object );
    }
 
-
-   
-   HalPutDmaAdapter ( Object );
 }
 
 ### Disassembly
