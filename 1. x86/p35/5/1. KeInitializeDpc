@@ -1,0 +1,65 @@
+Initializes a _KDPC structure.
+
+void KeInitializeDpc( __drv_aliasesMem PRKDPC Dpc, PKDEFERRED_ROUTINE DeferredRoutine, __drv_aliasesMem PVOID DeferredContext ){
+    Dpc->Type = 0x13;
+    Dpc->Importance = 0x1;
+    Dpc->DpcData = NULL;
+    Dpc->ProcessorHistory = NULL;
+    Dpc->DeferredRoutine = DeferredRoutine;
+    Dpc->DeferredContext = DeferredContext;
+}
+
+
+# Prototype
+
+void KeInitializeDpc(
+  [out]          __drv_aliasesMem PRKDPC Dpc,
+  [in]           PKDEFERRED_ROUTINE      DeferredRoutine,
+  [in, optional] __drv_aliasesMem PVOID  DeferredContext
+);
+
+
+# WinDBG analysis
+
+0: kd> uf nt!KeInitializeDpc
+nt!KeInitializeDpc:
+fffff806`46abfb50 33c0            xor     eax,eax
+fffff806`46abfb52 c70113010000    mov     dword ptr [rcx],113h
+fffff806`46abfb58 48894138        mov     qword ptr [rcx+38h],rax
+fffff806`46abfb5c 48894110        mov     qword ptr [rcx+10h],rax
+fffff806`46abfb60 48895118        mov     qword ptr [rcx+18h],rdx
+fffff806`46abfb64 4c894120        mov     qword ptr [rcx+20h],r8
+fffff806`46abfb68 c3              ret
+
+0: kd> dt ntkrnlmp!_KDPC
+   +0x000 TargetInfoAsUlong : Uint4B
+   +0x000 Type             : UChar
+   +0x001 Importance       : UChar
+   +0x002 Number           : Uint2B
+   +0x008 DpcListEntry     : _SINGLE_LIST_ENTRY
+   +0x010 ProcessorHistory : Uint8B
+   +0x018 DeferredRoutine  : Ptr64     void 
+   +0x020 DeferredContext  : Ptr64 Void
+   +0x028 SystemArgument1  : Ptr64 Void
+   +0x030 SystemArgument2  : Ptr64 Void
+   +0x038 DpcData          : Ptr64 Void
+
+
+0: kd> dt ntkrnlmp!_KDPC @rcx
+   +0x000 TargetInfoAsUlong : 0x113
+   +0x000 Type             : 0x13 ''
+   +0x001 Importance       : 0x1 ''
+   +0x002 Number           : 0
+   +0x008 DpcListEntry     : _SINGLE_LIST_ENTRY
+   +0x010 ProcessorHistory : 1
+   +0x018 DeferredRoutine  : 0xfffff806`4b015ef0     void  CLASSPNP!TransferPacketRetryTimerDpc+0
+   +0x020 DeferredContext  : 0xffffae01`85683bf0 Void
+   +0x028 SystemArgument1  : (null) 
+   +0x030 SystemArgument2  : (null) 
+   +0x038 DpcData          : (null) 
+
+0: kd> u @rdx
+CLASSPNP!TransferPacketRetryTimerDpc:
+fffff806`4b015ef0 4c8bdc          mov     r11,rsp
+fffff806`4b015ef3 4881ecb8000000  sub     rsp,0B8h
+fffff806`4b015efa 488b059f110400  mov     rax,qword ptr [CLASSPNP!_security_cookie (fffff806`4b0570a0)]

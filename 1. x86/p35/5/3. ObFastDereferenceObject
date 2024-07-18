@@ -1,0 +1,87 @@
+### Old
+
+VOID FASTCALL ObFastDereferenceObject	(IN PEX_FAST_REF FastRef, IN PVOID 	Object ){
+	EX_FAST_REF rax, r8 = *FastRef;
+	r8 = r8 ^ Object;
+	if (r8 < 0xf) {
+		r8 = rax++;
+	}	
+}
+
+0: kd> dt nt!_EX_FAST_REF
+   +0x000 Object           : Ptr64 Void
+   +0x000 RefCnt           : Pos 0, 4 Bits
+   +0x000 Value            : Uint8B
+
+### Decompile
+
+VOID FASTCALL ObFastDereferenceObject( PEX_FAST_REF FastRef, PVOID Object ){
+   
+//    EX_FAST_REF rax, r8 = *FastRef;
+   FastRef->RefCnt = FastRef->RefCnt ^ Object // FastRef->Value , FastRef->RefCnt
+
+   if (FastRef->RefCnt >= 0xf){
+      HalPutDmaAdapter ( Object );
+      return ;
+   } else {
+      r8 = FastRef->RefCnt++;
+   }
+
+
+   
+   HalPutDmaAdapter ( Object );
+}
+
+### Disassembly
+
+3: kd> uf ObFastDereferenceObject
+nt!ObFastDereferenceObject:
+fffff806`46a43ba0 4883ec28        sub     rsp,28h
+fffff806`46a43ba4 4c8bca          mov     r9,rdx
+fffff806`46a43ba7 0f0d09          prefetchw [rcx]
+fffff806`46a43baa 488b01          mov     rax,qword ptr [rcx]
+fffff806`46a43bad 4c8bc0          mov     r8,rax
+fffff806`46a43bb0 4c33c2          xor     r8,rdx
+fffff806`46a43bb3 4983f80f        cmp     r8,0Fh
+fffff806`46a43bb7 7311            jae     nt!ObFastDereferenceObject+0x2a (fffff806`46a43bca)  Branch
+
+nt!ObFastDereferenceObject+0x19:
+fffff806`46a43bb9 4c8d4001        lea     r8,[rax+1]
+fffff806`46a43bbd f04c0fb101      lock cmpxchg qword ptr [rcx],r8
+fffff806`46a43bc2 7510            jne     nt!ObFastDereferenceObject+0x34 (fffff806`46a43bd4)  Branch
+
+nt!ObFastDereferenceObject+0x24:
+fffff806`46a43bc4 4883c428        add     rsp,28h
+fffff806`46a43bc8 c3              ret
+
+nt!ObFastDereferenceObject+0x2a:
+fffff806`46a43bca 498bc9          mov     rcx,r9
+fffff806`46a43bcd e84e96ffff      call    nt!HalPutDmaAdapter (fffff806`46a3d220)
+fffff806`46a43bd2 ebf0            jmp     nt!ObFastDereferenceObject+0x24 (fffff806`46a43bc4)  Branch
+
+nt!ObFastDereferenceObject+0x34:
+fffff806`46a43bd4 488bd0          mov     rdx,rax
+fffff806`46a43bd7 4933d1          xor     rdx,r9
+fffff806`46a43bda 4883fa0f        cmp     rdx,0Fh
+fffff806`46a43bde 72d9            jb      nt!ObFastDereferenceObject+0x19 (fffff806`46a43bb9)  Branch
+
+nt!ObFastDereferenceObject+0x40:
+fffff806`46a43be0 ebe8            jmp     nt!ObFastDereferenceObject+0x2a (fffff806`46a43bca)  Branch
+
+
+#### Structures
+
+0: kd> dt nt!_EX_FAST_REF
+   +0x000 Object           : Ptr64 Void
+   +0x000 RefCnt           : Pos 0, 4 Bits
+   +0x000 Value            : Uint8B
+
+typedef struct _EX_FAST_REF
+{
+ union
+ {
+      PVOID Object;
+      ULONG RefCnt: 3;
+      ULONG Value;
+ };
+} EX_FAST_REF, *PEX_FAST_REF;
