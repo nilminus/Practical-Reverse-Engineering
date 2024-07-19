@@ -1,0 +1,67 @@
+# Prototype
+
+sub_13842 (struct _arg0* arg0, struct _arg1* arg1){
+
+    struct unk* var_eax = arg0->off_60;                 // eax = *(arg0 + 0x60);
+    
+    // array of structures
+    struct unk* esi = arg1->off_8;                      // esi = *(arg1 + 8);
+    
+    arg0->off_23--;                                    // *(byte*)(arg0 + 0x23)--;
+
+    arg0->off_60 -= 36;                                 //eax = eax - 0x24;
+                                                        // *(arg0+0x60) = eax;
+
+    var_eax->off_14 = arg1;                            // *(eax + 0x14) = arg1;
+    char index = var_eax->off_0;                           // eax = *(byte*)(eax)
+
+    int *func = esi->0x38[index];
+    return ((void(*)())func)();
+}
+
+# Pseudocode
+
+eax = *(arg0 + 0x60);
+esi = *(arg1 + 8);
+*(byte*)(arg0 + 0x23)--;
+eax = eax - 0x24;
+*(arg0+0x60) = eax;
+*(eax + 0x14) = arg1;
+eax = *(byte*)(eax)
+(esi + eax * 4 + 0x38)(arg1, arg0);
+
+# Structures
+
+struct arg0 {
+    +0x023 unk       :
+    +0x060 unk       : struct
+        +0x000          : array index
+        +0x014          : struct _arg1
+}
+
+struct arg1 {
+    +0x008 unk       :
+}
+
+struct es1 {
+    +0x038 unk       : void*
+}
+
+# Disassembly
+
+.text:00013842 sub_13842       proc near               ; CODE XREF: sub_1386E+2E8↓p
+.text:00013842                                         ; sub_13BE2+84↓p ...
+.text:00013842                 mov     eax, [ecx+60h]
+.text:00013845                 push    esi
+.text:00013846                 mov     esi, [edx+8]
+.text:00013849                 dec     byte ptr [ecx+23h]
+.text:0001384C                 sub     eax, 24h ; '$'
+.text:0001384F                 mov     [ecx+60h], eax
+.text:00013852                 mov     [eax+14h], edx
+.text:00013855                 movzx   eax, byte ptr [eax]
+.text:00013858                 push    ecx
+.text:00013859                 push    edx
+.text:0001385A                 call    dword ptr [esi+eax*4+38h]
+.text:0001385E                 pop     esi
+.text:0001385F                 retn
+.text:0001385F sub_13842       endp

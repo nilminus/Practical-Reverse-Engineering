@@ -1,0 +1,18 @@
+PIMAGE_SECTION_HEADER sub_10bb6(void* imagebase, DWORD PE_offset){
+
+    PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER) imagebase;
+    PIMAGE_NT_HEADERS pNtHeader = (PIMAGE_NT_HEADERS)((DWORD*)imagebase + imagebase->e_lfanew);
+
+    dwOptHdrSize = pNtHeader->FileHeader.SizeOfOptionalHeader;
+    PVOID pSectionHeader = pNtHeader + 0x18 + dwOptHdrSize // OptionalHeader + SizeOfOptionalHeader -> Start of 1st section
+
+    if (pNtHeader->NumberOfSections == 0)
+        return NULL;
+
+    do {
+        mystery_func(pSectionHeader, PE_offset)
+
+        pSectionHeader += 40;           // next section header (40 bytes per section header)
+        currentSection ++ ;
+    } while (currentSection < pNtHeader->NumberOfSections)
+}
