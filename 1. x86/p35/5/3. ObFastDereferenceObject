@@ -32,6 +32,22 @@ VOID FASTCALL ObFastDereferenceObject( PEX_FAST_REF FastRef, PVOID Object ){
 
 }
 
+--- or ---
+
+    __int64 value = FastRef->Value;  // Load FastRef->Value into rax
+    __int64 newValue;
+    
+    do {
+        newValue = value ^ (__int64)Object;  // XOR with Object, stored in r8
+        if (newValue >= 0xF) {
+            // If xor result is greater or equal to 0xF
+            HalPutDmaAdapter(Object);  // Call HalPutDmaAdapter with Object
+            return;
+        }
+
+        newValue = value + 1;  // Increment value by 1
+    } while (_InterlockedCompareExchange64((volatile __int64*)FastRef, newValue, value) != value);
+
 ### Disassembly
 
 3: kd> uf ObFastDereferenceObject

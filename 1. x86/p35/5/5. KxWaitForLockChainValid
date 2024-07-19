@@ -1,0 +1,87 @@
+### Decompile
+
+#define YieldProcessor _mm_pause
+
+PKSPIN_LOCK_QUEUE KxWaitForLockChainValid (__inout PKSPIN_LOCK_QUEUE LockQueue)
+{
+	int spin_counter = 0;
+	if (!(++spin_counter & HvlLongSpinCountMask)
+		&& (HvlEnlightenments & 0x40 )
+		&& (KiCheckVpBackingLongSpinWaitHypercall()))
+			HvlNotifyLongSpinWait(spin_counter);
+	else
+			YieldProcessor();
+	} while (LockQueue->Next == NULL);
+
+	return LockQueue->Next;
+}
+
+
+/*
+	do {
+		if (++spin_counter & HvlLongSpinCountMask){
+			pause;
+		} else {
+			if (HvlEnlightenments & 0x40){
+				pause;
+			} else {
+				if (KiCheckVpBackingLongSpinWaitHypercall() == 0)
+					pause;
+				else
+					HvlNotifyLongSpinWait(spin_counter);
+			}
+		}
+*/
+
+#### Structures
+
+0: kd> dt nt!_KSPIN_LOCK_QUEUE
+   +0x000 Next             : Ptr64 _KSPIN_LOCK_QUEUE
+   +0x008 Lock             : Ptr64 Uint8B
+
+### Function
+
+5: kd> uf KxWaitForLockChainValid
+nt!KxWaitForLockChainValid:
+fffff800`61d0a190 48895c2408      mov     qword ptr [rsp+8],rbx
+fffff800`61d0a195 57              push    rdi
+fffff800`61d0a196 4883ec20        sub     rsp,20h
+fffff800`61d0a19a 488bf9          mov     rdi,rcx
+fffff800`61d0a19d 33db            xor     ebx,ebx
+
+nt!KxWaitForLockChainValid+0xf:
+fffff800`61d0a19f ffc3            inc     ebx
+fffff800`61d0a1a1 851d99109f00    test    dword ptr [nt!HvlLongSpinCountMask (fffff800`626fb240)],ebx
+fffff800`61d0a1a7 0f84090d1600    je      nt!KxWaitForLockChainValid+0x160d26 (fffff800`61e6aeb6)  Branch
+
+nt!KxWaitForLockChainValid+0x1d:
+fffff800`61d0a1ad f390            pause
+
+nt!KxWaitForLockChainValid+0x1f:
+fffff800`61d0a1af 488b07          mov     rax,qword ptr [rdi]
+fffff800`61d0a1b2 4885c0          test    rax,rax
+fffff800`61d0a1b5 74e8            je      nt!KxWaitForLockChainValid+0xf (fffff800`61d0a19f)  Branch
+
+nt!KxWaitForLockChainValid+0x27:
+fffff800`61d0a1b7 488b5c2430      mov     rbx,qword ptr [rsp+30h]
+fffff800`61d0a1bc 4883c420        add     rsp,20h
+fffff800`61d0a1c0 5f              pop     rdi
+fffff800`61d0a1c1 c3              ret
+
+nt!KxWaitForLockChainValid+0x160d26:
+fffff800`61e6aeb6 8b0560158900    mov     eax,dword ptr [nt!HvlEnlightenments (fffff800`626fc41c)]
+fffff800`61e6aebc a840            test    al,40h
+fffff800`61e6aebe 0f84e9f2e9ff    je      nt!KxWaitForLockChainValid+0x1d (fffff800`61d0a1ad)  Branch
+
+nt!KxWaitForLockChainValid+0x160d34:
+fffff800`61e6aec4 e85760f2ff      call    nt!KiCheckVpBackingLongSpinWaitHypercall (fffff800`61d90f20)
+fffff800`61e6aec9 84c0            test    al,al
+fffff800`61e6aecb 0f84dcf2e9ff    je      nt!KxWaitForLockChainValid+0x1d (fffff800`61d0a1ad)  Branch
+
+nt!KxWaitForLockChainValid+0x160d41:
+fffff800`61e6aed1 8bcb            mov     ecx,ebx
+fffff800`61e6aed3 e86852f2ff      call    nt!HvlNotifyLongSpinWait (fffff800`61d90140)
+fffff800`61e6aed8 90              nop
+fffff800`61e6aed9 e9d1f2e9ff      jmp     nt!KxWaitForLockChainValid+0x1f (fffff800`61d0a1af)  Branch
+
+

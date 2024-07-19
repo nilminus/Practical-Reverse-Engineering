@@ -1,0 +1,85 @@
+
+VOID NTAPI KeReadyThread	(	IN PKTHREAD 	Thread	) {
+   if ( !((byte)Thread->ApcState.Process->StackCount & 7) ){
+      // Masks last 3 bits and checks if set
+      
+      CurrentIRQl = 2;
+      // CR8 is a new register accessible in 64-bit mode using the REX prefix. 
+      // CR8 is used to prioritize external interrupts and is referred to as the 
+      // task-priority register (TPR).
+      // block interrupts lower than 2
+
+      if ( (KiIrqlFlags) || (!(KiIrqlFlags & 1) || (CurrentIRQl > 15) ){
+         if (result = KiInSwapSingleProcess(Thread, Thread->ApcState.Process, CurrentIRQl)
+            return result;
+         else
+            KiFastReadyThread(Thread);
+      }
+   
+  } 
+   else {
+      KiFastReadyThread(Thread);
+   }
+
+}
+
+### Assembly
+
+2: kd> uf kereadythread
+nt!KeReadyThread:
+fffff802`29cd5b94 4053            push    rbx
+fffff802`29cd5b96 4883ec20        sub     rsp,20h
+fffff802`29cd5b9a 488b91b8000000  mov     rdx,qword ptr [rcx+0B8h]
+fffff802`29cd5ba1 488bd9          mov     rbx,rcx
+fffff802`29cd5ba4 8b8248030000    mov     eax,dword ptr [rdx+348h]
+fffff802`29cd5baa a807            test    al,7
+fffff802`29cd5bac 750f            jne     nt!KeReadyThread+0x29 (fffff802`29cd5bbd)  Branch
+
+nt!KeReadyThread+0x1a:
+fffff802`29cd5bae 488bcb          mov     rcx,rbx
+fffff802`29cd5bb1 e83e020000      call    nt!KiFastReadyThread (fffff802`29cd5df4)
+
+nt!KeReadyThread+0x22:
+fffff802`29cd5bb6 4883c420        add     rsp,20h
+fffff802`29cd5bba 5b              pop     rbx
+fffff802`29cd5bbb c3              ret
+
+nt!KeReadyThread+0x29:
+fffff802`29cd5bbd 450f20c0        mov     r8,cr8
+fffff802`29cd5bc1 b802000000      mov     eax,2
+fffff802`29cd5bc6 440f22c0        mov     cr8,rax
+fffff802`29cd5bca 8b05906aa200    mov     eax,dword ptr [nt!KiIrqlFlags (fffff802`2a6fc660)]
+fffff802`29cd5bd0 85c0            test    eax,eax
+fffff802`29cd5bd2 0f85fc711800    jne     nt!KeReadyThread+0x187240 (fffff802`29e5cdd4)  Branch
+
+nt!KeReadyThread+0x44:
+fffff802`29cd5bd8 488bcb          mov     rcx,rbx
+fffff802`29cd5bdb e870d90400      call    nt!KiInSwapSingleProcess (fffff802`29d23550)
+fffff802`29cd5be0 84c0            test    al,al
+fffff802`29cd5be2 75d2            jne     nt!KeReadyThread+0x22 (fffff802`29cd5bb6)  Branch
+
+nt!KeReadyThread+0x50:
+fffff802`29cd5be4 ebc8            jmp     nt!KeReadyThread+0x1a (fffff802`29cd5bae)  Branch
+
+nt!KeReadyThread+0x187240:
+fffff802`29e5cdd4 a801            test    al,1
+fffff802`29e5cdd6 0f84fc8de7ff    je      nt!KeReadyThread+0x44 (fffff802`29cd5bd8)  Branch
+
+nt!KeReadyThread+0x187248:
+fffff802`29e5cddc 4180f80f        cmp     r8b,0Fh
+fffff802`29e5cde0 0f87f28de7ff    ja      nt!KeReadyThread+0x44 (fffff802`29cd5bd8)  Branch
+
+nt!KeReadyThread+0x187252:
+fffff802`29e5cde6 65488b042520000000 mov   rax,qword ptr gs:[20h]
+fffff802`29e5cdef 41b901000000    mov     r9d,1
+fffff802`29e5cdf5 410fb6c8        movzx   ecx,r8b
+fffff802`29e5cdf9 ffc1            inc     ecx
+fffff802`29e5cdfb 49d3e1          shl     r9,cl
+fffff802`29e5cdfe 4c8b98b8840000  mov     r11,qword ptr [rax+84B8h]
+fffff802`29e5ce05 41ffc9          dec     r9d
+fffff802`29e5ce08 41f7d1          not     r9d
+fffff802`29e5ce0b 4183e104        and     r9d,4
+fffff802`29e5ce0f 458b5314        mov     r10d,dword ptr [r11+14h]
+fffff802`29e5ce13 450bca          or      r9d,r10d
+fffff802`29e5ce16 45894b14        mov     dword ptr [r11+14h],r9d
+fffff802`29e5ce1a e9b98de7ff      jmp     nt!KeReadyThread+0x44 (fffff802`29cd5bd8)  Branch
