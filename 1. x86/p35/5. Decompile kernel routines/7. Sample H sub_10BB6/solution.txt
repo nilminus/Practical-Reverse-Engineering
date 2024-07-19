@@ -10,7 +10,9 @@ PIMAGE_SECTION_HEADER sub_10bb6(void* imagebase, DWORD PE_offset){
         return NULL;
 
     do {
-        mystery_func(pSectionHeader, PE_offset)
+        int res = mystery_func(pSectionHeader, PE_offset);
+        if (!res)
+            return pSection;
 
         pSectionHeader += 40;           // next section header (40 bytes per section header)
         currentSection ++ ;
