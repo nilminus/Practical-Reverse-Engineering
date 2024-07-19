@@ -1,0 +1,81 @@
+### RtlValidateUnicodeString
+
+NTSYSAPI NTSTATUS NTAPI RtlValidateUnicodeString (ULONG Flags, PCUNICODE_STRING String){
+
+    if (uFlags)
+        return STATUS_SUCCESS;
+
+
+    if (pString)
+    {
+        CurrentLength = pString->Length;
+
+        if (!(CurrentLength & 1)) {
+
+            if ( (pString->MaximumLength & 1) 
+            || (CurrentLength > pString->MaximumLength)
+            || (pString->MaximumLength > 0xFFFE) 
+            || pString->Buffer && (CurrentLength || pString->MaximumLength) )
+            {
+                return STATUS_INVALID_PARAMETER
+            }
+	}
+
+    return STATUS_SUCCESS;     
+}
+
+### Structures
+
+2: kd> dt nt!_UNICODE_STRING
+   +0x000 Length           : Uint2B
+   +0x002 MaximumLength    : Uint2B
+   +0x008 Buffer           : Ptr64 Wchar
+
+
+2: kd> uf nt!RtlValidateUnicodeString
+nt!RtlValidateUnicodeString:
+fffff802`29d2c010 33c0            xor     eax,eax
+fffff802`29d2c012 85c9            test    ecx,ecx
+fffff802`29d2c014 753d            jne     nt!RtlValidateUnicodeString+0x43 (fffff802`29d2c053)  Branch
+
+nt!RtlValidateUnicodeString+0x6:
+fffff802`29d2c016 4885d2          test    rdx,rdx
+fffff802`29d2c019 742b            je      nt!RtlValidateUnicodeString+0x36 (fffff802`29d2c046)  Branch
+
+nt!RtlValidateUnicodeString+0xb:
+fffff802`29d2c01b 440fb702        movzx   r8d,word ptr [rdx]
+fffff802`29d2c01f 41f6c001        test    r8b,1
+fffff802`29d2c023 752e            jne     nt!RtlValidateUnicodeString+0x43 (fffff802`29d2c053)  Branch
+
+nt!RtlValidateUnicodeString+0x15:
+fffff802`29d2c025 0fb74a02        movzx   ecx,word ptr [rdx+2]
+fffff802`29d2c029 f6c101          test    cl,1
+fffff802`29d2c02c 7525            jne     nt!RtlValidateUnicodeString+0x43 (fffff802`29d2c053)  Branch
+
+nt!RtlValidateUnicodeString+0x1e:
+fffff802`29d2c02e 66443bc1        cmp     r8w,cx
+fffff802`29d2c032 771f            ja      nt!RtlValidateUnicodeString+0x43 (fffff802`29d2c053)  Branch
+
+nt!RtlValidateUnicodeString+0x24:
+fffff802`29d2c034 41b9feff0000    mov     r9d,0FFFEh
+fffff802`29d2c03a 66413bc9        cmp     cx,r9w
+fffff802`29d2c03e 7713            ja      nt!RtlValidateUnicodeString+0x43 (fffff802`29d2c053)  Branch
+
+nt!RtlValidateUnicodeString+0x30:
+fffff802`29d2c040 48394208        cmp     qword ptr [rdx+8],rax
+fffff802`29d2c044 7402            je      nt!RtlValidateUnicodeString+0x38 (fffff802`29d2c048)  Branch
+
+nt!RtlValidateUnicodeString+0x36:
+fffff802`29d2c046 c3              ret
+
+nt!RtlValidateUnicodeString+0x38:
+fffff802`29d2c048 664585c0        test    r8w,r8w
+fffff802`29d2c04c 7505            jne     nt!RtlValidateUnicodeString+0x43 (fffff802`29d2c053)  Branch
+
+nt!RtlValidateUnicodeString+0x3e:
+fffff802`29d2c04e 6685c9          test    cx,cx
+fffff802`29d2c051 74f3            je      nt!RtlValidateUnicodeString+0x36 (fffff802`29d2c046)  Branch
+
+nt!RtlValidateUnicodeString+0x43:
+fffff802`29d2c053 b80d0000c0      mov     eax,0C000000Dh
+fffff802`29d2c058 c3              ret
